@@ -11,8 +11,8 @@ from fbprophet import Prophet
 tickerk=("KRW-LINK","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BSV","KRW-LTC",
 "KRW-DOGE","KRW-XEM","KRW-BCH","KRW-NEO","KRW-ONT","KRW-CRO")
 
-access = "y958mZ4M1rnTkvF5xLAHMABRfFtYIs5SUvWhR0EF"
-secret = "5LAY4cphNQjUQwWPVBoXxAumGqUo0BTvSidlSybE"
+access = ""
+secret = ""
 
 def get_current_price(ticker):
     """현재가 조회"""
