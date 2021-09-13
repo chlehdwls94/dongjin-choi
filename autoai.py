@@ -4,15 +4,24 @@ import datetime
 import schedule
 import pystan
 from fbprophet import Prophet
+import numpy as np
+# import ccxt
+
+# binance = ccxt.binance()
+# markets = binance.fetch_tickers()
+# print(markets.keys())
+# tickerb = binance.fetch_ticker('ETH/BTC')
 
 # tickerk=("KRW-LINK","KRW-QTUM","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BORA","KRW-BSV","KRW-LTC",
 # "KRW-DOGE","KRW-BTC","KRW-ETH","KRW-XEM","KRW-BCH","KRW-NEO","KRW-ONT","KRW-CRO")
 
-tickerk=("KRW-LINK","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BSV","KRW-LTC",
-"KRW-DOGE","KRW-XEM","KRW-BCH","KRW-NEO","KRW-ONT","KRW-CRO")
+tickerk=("KRW-LINK","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BSV","KRW-LTC","KRW-QTUM","KRW-BTC","KRW-QKC",
+"KRW-DOGE","KRW-XEM","KRW-BCH","KRW-NEO","KRW-BTC","KRW-CRO","KRW-GAS")
 
-access = ""
-secret = ""
+# tickerk=("KRW-GAS","KRW-NEO","KRW-QKC")
+
+access = "xxx"
+secret = "xxx"
 
 def get_current_price(ticker):
     """현재가 조회"""
@@ -210,9 +219,14 @@ def coin_name(ticker):
     elif ticker=="KRW-LTC":
         s="LTC"
     elif ticker=="KRW-BSV":
-        s="BSV"                                  
+        s="BSV"            
+    elif ticker=="KRW-QKC":
+        s="QKC"
+    elif ticker=="KRW-IOST":
+        s="IOST"
+                          
     return s
-
+#수정
 def get_target_price(ticker, k):
     """변동성 돌파 전략으로 매수 목표가 조회"""
     df = pyupbit.get_ohlcv(ticker, interval="day", count=2)
@@ -291,6 +305,19 @@ def current_ai_gap(ticker):
     gap=ai_price/current_price
     return gap
 
+
+def get_ror(ticker,k=0.5):
+    df = pyupbit.get_ohlcv(ticker,interval="minute120",count=10)
+    df['range'] = (df['high'] - df['low']) * k
+    df['target'] = df['open'] + df['range'].shift(1)
+    fee = 0
+    df['ror'] = np.where(df['high'] > df['target'],
+                         df['close'] / df['target'] - fee,
+                         1)
+    ror = df['ror'].cumprod()[-2]
+    return ror
+
+
 def find_max_k(ticker):
     ror=[]
     for k in np.arange(0.1, 1.0, 0.1):
@@ -299,19 +326,15 @@ def find_max_k(ticker):
         max_value_index=ror.index(max_value)
         #print(max_value_index)
         max_k=(max_value_index+1)*0.1
+        time.sleep(0.1)
     return max_k
 # 로그인
 upbit = pyupbit.Upbit(access, secret)
 print("autotrade start")
 
 si=21
-
-# ticker=coin_find_AI(tickerk)
-# predict_price(ticker,si)
-# print(ticker)
-# print(current_ai_gap(ticker))
-# print(ma_current_gap(ticker))
-# print(predicted_close_price)
+buy_ma_gap=98.2
+sell_ma_gap=102.2
 
 
 while True:
@@ -324,13 +347,15 @@ while True:
     time.sleep(0.1)
     print(ma_now_gap)
     time.sleep(0.1)
-    if ma_now_gap<97.5:   # 급락장 97.5  # 평상시 98.5
+
+    if ma_now_gap<buy_ma_gap:   # 급락장 97.5  # 평상시 98.5
         predict_price(ticker,si)
         now_ai_gap=current_ai_gap(ticker)
         print(now_ai_gap)
-        k=find_max_k(ticker)
+        # k=find_max_k(ticker)
         if now_ai_gap >1 :
             break
+
 # FFT 전략 고민
 # 이미 상승했을 때 case / 하락 case
 schedule.every().hour.do(lambda: predict_price(ticker,si))
@@ -348,14 +373,14 @@ while True:
         ma24 = get_ma24(ticker)
         current_price = get_current_price(ticker)
         now_ai_gap=current_ai_gap(ticker)
-        target_price=get_target_price(ticker, k)
-        print(target_price)
+        # target_price=get_target_price(ticker, k)
+        # print(target_price)
         time.sleep(0.1)
         print(now_ai_gap)
         time.sleep(0.1)
         print(ma_now_gap)
 
-        if current_price > target_price and current_price < predicted_close_price and ma_now_gap < 98.5 and now_ai_gap > 1:
+        if  current_price < predicted_close_price and ma_now_gap < buy_ma_gap and now_ai_gap > 1:
             krw = get_balance("KRW")
             if krw > 5000:
                 upbit.buy_market_order(ticker, krw*0.9995)
@@ -365,7 +390,7 @@ while True:
         now_price=current_price*coindj
 
 
-        if (current_price>predicted_close_price or ma_now_gap > 103) and current_price > buy_price:  #수정
+        if current_price>predicted_close_price or ma_now_gap > sell_ma_gap:  #수정
             print(now)
             print(now_price)
             time.sleep(1)
@@ -381,11 +406,11 @@ while True:
                 time.sleep(0.1)
                 print(ma_now_gap)
                 time.sleep(0.1)
-                if ma_now_gap<98.5:
+                if ma_now_gap<buy_ma_gap:
                     predict_price(ticker,si)
                     now_ai_gap=current_ai_gap(ticker)
                     print(now_ai_gap)
-                    k=find_max_k(ticker)
+                    # k=find_max_k(ticker)
                     if now_ai_gap >1 :
                         break
             # ticker=coin_find_AI(tickerk)
