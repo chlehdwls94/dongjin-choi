@@ -5,20 +5,10 @@ import schedule
 import pystan
 from fbprophet import Prophet
 import numpy as np
-# import ccxt
 
-# binance = ccxt.binance()
-# markets = binance.fetch_tickers()
-# print(markets.keys())
-# tickerb = binance.fetch_ticker('ETH/BTC')
+tickerk=("KRW-LINK","KRW-QTUM","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BORA","KRW-BSV","KRW-LTC",
+"KRW-DOGE","KRW-BTC","KRW-ETH","KRW-XEM","KRW-BCH","KRW-NEO","KRW-ONT","KRW-CRO")
 
-# tickerk=("KRW-LINK","KRW-QTUM","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BORA","KRW-BSV","KRW-LTC",
-# "KRW-DOGE","KRW-BTC","KRW-ETH","KRW-XEM","KRW-BCH","KRW-NEO","KRW-ONT","KRW-CRO")
-
-tickerk=("KRW-LINK","KRW-EOS","KRW-ADA","KRW-ETC","KRW-BSV","KRW-LTC","KRW-QTUM","KRW-BTC","KRW-QKC",
-"KRW-DOGE","KRW-XEM","KRW-BCH","KRW-NEO","KRW-BTC","KRW-CRO","KRW-GAS")
-
-# tickerk=("KRW-GAS","KRW-NEO","KRW-QKC")
 
 access = "xxx"
 secret = "xxx"
@@ -332,7 +322,7 @@ def find_max_k(ticker):
 upbit = pyupbit.Upbit(access, secret)
 print("autotrade start")
 
-si=21
+si=18
 buy_ma_gap=98.2
 sell_ma_gap=102.2
 
@@ -341,23 +331,16 @@ while True:
     
     ticker=find_coin()  ##min gap 찾는 코드 코딩하기 while
     time.sleep(0.1)
-    print(ticker)
-    time.sleep(0.1)
     ma_now_gap=ma_current_gap(ticker)
     time.sleep(0.1)
-    print(ma_now_gap)
-    time.sleep(0.1)
+
 
     if ma_now_gap<buy_ma_gap:   # 급락장 97.5  # 평상시 98.5
         predict_price(ticker,si)
         now_ai_gap=current_ai_gap(ticker)
         print(now_ai_gap)
-        # k=find_max_k(ticker)
         if now_ai_gap >1 :
             break
-
-# FFT 전략 고민
-# 이미 상승했을 때 case / 하락 case
 schedule.every().hour.do(lambda: predict_price(ticker,si))
 
 buy_price=0
@@ -365,22 +348,15 @@ buy_price=0
 while True:
     try:
         now = datetime.datetime.now()
-        # start_time = get_start_time("KRW-BTC")
-        # end_time = start_time + datetime.timedelta(days=1)
         schedule.run_pending()
         current_price = get_current_price(ticker)
         ma_now_gap=ma_current_gap(ticker)
         ma24 = get_ma24(ticker)
         current_price = get_current_price(ticker)
         now_ai_gap=current_ai_gap(ticker)
-        # target_price=get_target_price(ticker, k)
-        # print(target_price)
         time.sleep(0.1)
-        print(now_ai_gap)
-        time.sleep(0.1)
-        print(ma_now_gap)
-
-        if  current_price < predicted_close_price and ma_now_gap < buy_ma_gap and now_ai_gap > 1:
+        
+        if  current_price < predicted_close_price and ma_now_gap < buy_ma_gap :
             krw = get_balance("KRW")
             if krw > 5000:
                 upbit.buy_market_order(ticker, krw*0.9995)
@@ -400,25 +376,13 @@ while True:
 
                 ticker=find_coin()  ##min gap 찾는 코드 코딩하기 while
                 time.sleep(0.1)
-                print(ticker)
-                time.sleep(0.1)
                 ma_now_gap=ma_current_gap(ticker)
-                time.sleep(0.1)
-                print(ma_now_gap)
                 time.sleep(0.1)
                 if ma_now_gap<buy_ma_gap:
                     predict_price(ticker,si)
                     now_ai_gap=current_ai_gap(ticker)
-                    print(now_ai_gap)
-                    # k=find_max_k(ticker)
                     if now_ai_gap >1 :
                         break
-            # ticker=coin_find_AI(tickerk)
-            # predict_price(ticker,si)
-            # print(current_ai_gap(ticker))
-            # print(ma_current_gap(ticker))
-            
-
 
         time.sleep(1)
 
